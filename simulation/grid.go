@@ -13,8 +13,8 @@ type Grid struct {
 
 // Space represents a discrete location
 type Space struct {
-	scent     uint16
-	organisms []*Organism
+	scent    uint16
+	organism *Organism
 }
 
 // Organism represents one creature that occupies one space
@@ -47,7 +47,7 @@ func (grid *Grid) initialize() {
 					direction: rand.Intn(360),
 				}
 
-				space.organisms = append(space.organisms, &organism)
+				space.organism = &organism
 			}
 
 			row = append(row, &space)

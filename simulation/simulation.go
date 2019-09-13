@@ -68,7 +68,7 @@ func createImage(grid Grid, pal color.Palette) (img *image.Paletted) {
 
 	for y, row := range grid.rows {
 		for x, space := range row {
-			if len(space.organisms) > 0 {
+			if space.organism != nil {
 				img.SetColorIndex(x, y, 1)
 			}
 		}
