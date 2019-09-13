@@ -18,8 +18,8 @@ var options = map[string]int{
 	"height":            500,
 	"nFrames":           500,
 	"delay":             2,
-	"sensorDegree":      3,
-	"sensorDistance":    3,
+	"sensorDegree":      45,
+	"sensorDistance":    9,
 	"scentSpreadFactor": 3,
 }
 
@@ -42,7 +42,6 @@ func setOptions(urlOptions map[string]interface{}) {
 
 func animate(name string) {
 	grid := Grid{width: options["width"], height: options["height"]}
-	organisms := OrganismGrid{}
 	anim := gif.GIF{LoopCount: options["nFrames"]}
 
 	var pal color.Palette
@@ -52,9 +51,8 @@ func animate(name string) {
 	pal = append(pal, white)
 
 	grid.initialize()
-	organisms.initialize()
 	for i := 0; i < options["nFrames"]; i++ {
-		drawNextFrame(grid, organisms, &anim, pal)
+		drawNextFrame(grid, &anim, pal)
 	}
 
 	f, err := os.Create(name)
@@ -64,13 +62,13 @@ func animate(name string) {
 	gif.EncodeAll(f, &anim)
 }
 
-func createImage(organisms OrganismGrid, pal color.Palette) (img *image.Paletted) {
+func createImage(grid Grid, pal color.Palette) (img *image.Paletted) {
 	rect := image.Rect(x0, y0, options["width"], options["height"])
 	img = image.NewPaletted(rect, pal)
 
-	for y, row := range organisms.rows {
-		for x, organism := range row {
-			if organism != nil {
+	for y, row := range grid.rows {
+		for x, space := range row {
+			if len(space.organisms) > 0 {
 				img.SetColorIndex(x, y, 1)
 			}
 		}
@@ -79,8 +77,8 @@ func createImage(organisms OrganismGrid, pal color.Palette) (img *image.Paletted
 	return img
 }
 
-func drawNextFrame(grid Grid, organisms OrganismGrid, anim *gif.GIF, pal color.Palette) {
-	img := createImage(organisms, pal)
+func drawNextFrame(grid Grid, anim *gif.GIF, pal color.Palette) {
+	img := createImage(grid, pal)
 	anim.Delay = append(anim.Delay, options["delay"])
 	anim.Image = append(anim.Image, img)
 }
