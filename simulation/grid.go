@@ -13,7 +13,7 @@ type Grid struct {
 
 // Space represents a discrete location
 type Space struct {
-	scent    uint16
+	scent    float64
 	organism *Organism
 }
 
@@ -46,7 +46,7 @@ func (grid *Grid) initialize() {
 		for x := 0; x < options["width"]; x++ {
 			space := Space{}
 
-			if rand.Intn(50) == 1 {
+			if rand.Intn(20) == 1 {
 				organism := Organism{
 					id:        orgCount,
 					xPos:      float64(x),
