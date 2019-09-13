@@ -183,7 +183,7 @@ func drawNextFrame(grid Grid, anim *gif.GIF, pal color.Palette) {
 						// Continue in same direction
 					} else if leftScent > frontScent && rightScent > frontScent {
 						// Rotate randomly left or right
-						toss := rand.Intn(1)
+						toss := rand.Intn(2)
 						if toss == 0 {
 							organism.direction += sensorDegree
 							if organism.direction > 360 {
