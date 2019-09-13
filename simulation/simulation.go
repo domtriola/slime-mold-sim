@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"image/gif"
 	"log"
+	"math/rand"
 	"os"
 )
 
@@ -17,6 +18,7 @@ var options = map[string]int{
 	"width":             500,
 	"height":            500,
 	"nFrames":           500,
+	"loopCount":         1000,
 	"delay":             2,
 	"sensorDegree":      45,
 	"sensorDistance":    9,
@@ -42,7 +44,7 @@ func setOptions(urlOptions map[string]interface{}) {
 
 func animate(name string) {
 	grid := Grid{width: options["width"], height: options["height"]}
-	anim := gif.GIF{LoopCount: options["nFrames"]}
+	anim := gif.GIF{LoopCount: options["loopCount"]}
 
 	var pal color.Palette
 	black := color.RGBA{0, 0, 0, 255}
@@ -70,6 +72,8 @@ func createImage(grid Grid, pal color.Palette) (img *image.Paletted) {
 		for x, space := range row {
 			if space.organism != nil {
 				img.SetColorIndex(x, y, 1)
+			} else {
+				img.SetColorIndex(x, y, 0)
 			}
 		}
 	}
@@ -78,6 +82,48 @@ func createImage(grid Grid, pal color.Palette) (img *image.Paletted) {
 }
 
 func drawNextFrame(grid Grid, anim *gif.GIF, pal color.Palette) {
+	for _, row := range grid.rows {
+		for _, space := range row {
+			if space.organism != nil {
+				organism := space.organism
+
+				vel := Velocity{
+					direction: organism.direction,
+					speed:     1,
+				}
+				nextX, nextY := NextPos(organism.xPos, organism.yPos, vel)
+				nextDiscreteX, nextDiscreteY := FloatPosToGridPos(nextX, nextY)
+
+				organism.xPos = nextX
+				organism.yPos = nextY
+
+				if grid.hasCoord(nextDiscreteX, nextDiscreteY) {
+					organism.nextDiscreteXPos = nextDiscreteX
+					organism.nextDiscreteYPos = nextDiscreteY
+				} else {
+					space.organism = nil
+				}
+			}
+		}
+	}
+
+	for _, row := range grid.rows {
+		for _, space := range row {
+			if space.organism != nil {
+				organism := space.organism
+
+				destinationSpace := grid.rows[organism.nextDiscreteXPos][organism.nextDiscreteYPos]
+
+				if destinationSpace.organism == nil {
+					space.organism = nil
+					destinationSpace.organism = organism
+				} else if destinationSpace.organism.id != organism.id {
+					organism.direction = float64(rand.Intn(360))
+				}
+			}
+		}
+	}
+
 	img := createImage(grid, pal)
 	anim.Delay = append(anim.Delay, options["delay"])
 	anim.Image = append(anim.Image, img)

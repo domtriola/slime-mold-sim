@@ -23,6 +23,7 @@ func genHandler(w http.ResponseWriter, r *http.Request) {
 		"width",
 		"height",
 		"nFrames",
+		"loopCount",
 		"delay",
 		"sensorDegree",
 		"sensorDistance",

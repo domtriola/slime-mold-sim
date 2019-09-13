@@ -19,12 +19,16 @@ type Space struct {
 
 // Organism represents one creature that occupies one space
 type Organism struct {
-	direction int
+	id        int
+	direction float64
 
 	// Position is a float so the organisms can travel at angles other than 45
 	// degrees while still taking steps of one cell at a time.
-	xPos float32
-	yPos float32
+	xPos float64
+	yPos float64
+
+	nextDiscreteXPos int
+	nextDiscreteYPos int
 }
 
 func (grid Grid) hasCoord(x, y int) bool {
@@ -36,18 +40,22 @@ func (grid Grid) get(x, y int) *Space {
 }
 
 func (grid *Grid) initialize() {
+	orgCount := 0
 	for y := 0; y < options["height"]; y++ {
 		row := []*Space{}
 		for x := 0; x < options["width"]; x++ {
 			space := Space{}
 
-			// TODO: make dynamic
-			if rand.Intn(10) == 1 {
+			if rand.Intn(50) == 1 {
 				organism := Organism{
-					direction: rand.Intn(360),
+					id:        orgCount,
+					xPos:      float64(x),
+					yPos:      float64(y),
+					direction: float64(rand.Intn(360)),
 				}
 
 				space.organism = &organism
+				orgCount++
 			}
 
 			row = append(row, &space)
