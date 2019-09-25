@@ -14,7 +14,7 @@ const (
 	y0 = 0
 )
 
-var scentDecay = 0.2
+var scentDecay = 0.5
 var scentSpreadFactor = 0.1
 
 var options = map[string]int{
@@ -44,19 +44,20 @@ func setOptions(urlOptions map[string]interface{}) {
 	}
 }
 
+// TODO: draw scent trails with opacity
 func animate(name string) {
 	grid := Grid{width: options["width"], height: options["height"]}
 	anim := gif.GIF{LoopCount: options["loopCount"]}
 
-	var pal color.Palette
-	black := color.RGBA{0, 0, 0, 255}
-	white := color.RGBA{255, 255, 255, 255}
-	pal = append(pal, black)
-	pal = append(pal, white)
+	var palette []color.Color
+	for alpha := 0; alpha <= 255; alpha += 10 {
+		// fmt.Printf("alpha: %v\n", alpha)
+		palette = append(palette, color.RGBA{255, 255, 255, uint8(alpha)})
+	}
 
 	grid.initialize()
 	for i := 0; i < options["nFrames"]; i++ {
-		drawNextFrame(grid, &anim, pal)
+		drawNextFrame(grid, &anim, palette)
 	}
 
 	f, err := os.Create(name)
@@ -73,7 +74,19 @@ func createImage(grid Grid, pal color.Palette) (img *image.Paletted) {
 	for y, row := range grid.rows {
 		for x, space := range row {
 			if space.organism != nil {
-				img.SetColorIndex(x, y, 1)
+				img.SetColorIndex(x, y, 25)
+				// } else if space.scent > 0.05 {
+				// 	// fmt.Printf("drawing scent: %v\n", space.scent)
+				// 	var scentColorIndex uint8
+				// 	if space.scent > 1 {
+				// 		scentColorIndex = 25
+				// 	} else {
+				// 		scentColorIndex = uint8(space.scent * 25)
+				// 	}
+				// 	fmt.Printf("color index: %v\n", uint8(scentColorIndex))
+				// 	img.SetColorIndex(x, y, scentColorIndex)
+				// } else {
+				// 	img.SetColorIndex(x, y, 0)
 			}
 		}
 	}
