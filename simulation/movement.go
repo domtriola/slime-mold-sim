@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-// Velocity represents the angular direction and speed of an entity
+// Velocity represents the direction and speed of an entity
 type Velocity struct {
 	direction float64
 	speed     float64

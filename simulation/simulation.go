@@ -1,6 +1,7 @@
 package simulation
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/gif"
@@ -14,7 +15,7 @@ const (
 	y0 = 0
 )
 
-var scentDecay = 0.2
+var scentDecay = 0.9
 var scentSpreadFactor = 0.1
 
 var options = map[string]int{
@@ -31,7 +32,14 @@ var options = map[string]int{
 func Build(urlOptions map[string]interface{}) (name string) {
 	setOptions(urlOptions)
 
-	name = "tmp/image.gif"
+	path := "tmp"
+	extension := ".gif"
+	name = fmt.Sprintf("%s/", path)
+	for option := range options {
+		name += fmt.Sprintf("%s%d", option, options[option])
+	}
+	name += extension
+
 	animate(name)
 	return name
 }
@@ -44,6 +52,7 @@ func setOptions(urlOptions map[string]interface{}) {
 	}
 }
 
+// TODO: draw scent trails with opacity
 func animate(name string) {
 	grid := Grid{width: options["width"], height: options["height"]}
 	anim := gif.GIF{LoopCount: options["loopCount"]}
@@ -54,9 +63,21 @@ func animate(name string) {
 	pal = append(pal, black)
 	pal = append(pal, white)
 
+	palette := []color.Color{
+		color.RGBA{0, 0, 0, 255},
+	}
+	for greyScale := 0; greyScale <= 255; greyScale += 10 {
+		palette = append(palette, color.RGBA{
+			uint8(greyScale),
+			uint8(greyScale),
+			uint8(greyScale),
+			255,
+		})
+	}
+
 	grid.initialize()
 	for i := 0; i < options["nFrames"]; i++ {
-		drawNextFrame(grid, &anim, pal)
+		drawNextFrame(grid, &anim, palette)
 	}
 
 	f, err := os.Create(name)
@@ -73,7 +94,13 @@ func createImage(grid Grid, pal color.Palette) (img *image.Paletted) {
 	for y, row := range grid.rows {
 		for x, space := range row {
 			if space.organism != nil {
-				img.SetColorIndex(x, y, 1)
+				img.SetColorIndex(x, y, 10)
+			} else if space.scent > 0.01 {
+				scentColorIndex := uint8(space.scent * 100)
+				if scentColorIndex > 26 {
+					scentColorIndex = 26
+				}
+				img.SetColorIndex(x, y, scentColorIndex)
 			}
 		}
 	}
