@@ -46,6 +46,10 @@ func (grid *Grid) initialize() {
 		for x := 0; x < options["width"]; x++ {
 			space := Space{}
 
+			// TODO: configure various starting formations
+			// margin := 180
+			// if x > margin && y > margin && x < options["width"]-margin && y < options["height"]-margin {
+			// if x < options["width"]/4 && y < options["height"]/4 {
 			if rand.Intn(20) == 1 {
 				organism := Organism{
 					id:        orgCount,

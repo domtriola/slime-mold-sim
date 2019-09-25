@@ -35,6 +35,7 @@ func Build(urlOptions map[string]interface{}) (name string) {
 	path := "tmp"
 	extension := ".gif"
 	name = fmt.Sprintf("%s/", path)
+	// TODO: sort keys for consistent names
 	for option := range options {
 		name += fmt.Sprintf("%s%d", option, options[option])
 	}
@@ -94,7 +95,7 @@ func createImage(grid Grid, pal color.Palette) (img *image.Paletted) {
 	for y, row := range grid.rows {
 		for x, space := range row {
 			if space.organism != nil {
-				img.SetColorIndex(x, y, 10)
+				img.SetColorIndex(x, y, 26)
 			} else if space.scent > 0.01 {
 				scentColorIndex := uint8(space.scent * 100)
 				if scentColorIndex > 26 {
