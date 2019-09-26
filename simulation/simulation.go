@@ -32,17 +32,25 @@ var options = map[string]int{
 func Build(urlOptions map[string]interface{}) (name string) {
 	setOptions(urlOptions)
 
-	path := "tmp"
-	extension := ".gif"
-	name = fmt.Sprintf("%s/", path)
-	// TODO: sort keys for consistent names
-	for option := range options {
-		name += fmt.Sprintf("%s%d", option, options[option])
-	}
-	name += extension
-
+	name = filename()
 	animate(name)
 	return name
+}
+
+func filename() (name string) {
+	path := "tmp"
+	extension := "gif"
+	return fmt.Sprintf(
+		"%s/w%dh%dnF%dd%dsDe%dsDi%d.%s",
+		path,
+		options["width"],
+		options["height"],
+		options["nFrames"],
+		options["delay"],
+		options["sensorDegree"],
+		options["sensorDistance"],
+		extension,
+	)
 }
 
 func setOptions(urlOptions map[string]interface{}) {
