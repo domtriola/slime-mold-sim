@@ -61,7 +61,6 @@ func setOptions(urlOptions map[string]interface{}) {
 	}
 }
 
-// TODO: draw scent trails with opacity
 func animate(name string) {
 	grid := Grid{width: options["width"], height: options["height"]}
 	anim := gif.GIF{LoopCount: options["loopCount"]}
@@ -117,7 +116,7 @@ func createImage(grid Grid, pal color.Palette) (img *image.Paletted) {
 	return img
 }
 
-func drawNextFrame(grid Grid, anim *gif.GIF, pal color.Palette) {
+func setNextPositions(grid Grid) {
 	for _, row := range grid.rows {
 		for _, space := range row {
 			if space.organism != nil {
@@ -142,7 +141,9 @@ func drawNextFrame(grid Grid, anim *gif.GIF, pal color.Palette) {
 			}
 		}
 	}
+}
 
+func moveOrganisms(grid Grid) {
 	for _, row := range grid.rows {
 		for _, space := range row {
 			space.scent *= scentDecay
@@ -154,103 +155,122 @@ func drawNextFrame(grid Grid, anim *gif.GIF, pal color.Palette) {
 
 				// Movement Step
 				// Move if possible, otherwise change directions
-				if destinationSpace.organism == nil {
-					// TODO: setting this to nil before calculating the rest of the movements
-					// means the top-left of the screen becomes more dense than the bottom-right
-					space.organism = nil
-					destinationSpace.organism = organism
-					destinationSpace.scent++
-				} else if destinationSpace.organism.id != organism.id {
-					organism.direction = float64(rand.Intn(360))
-				}
+				moveOrganism(organism, space, destinationSpace)
 
 				// Sensory Step
 				// Find the direction with the largest scent trail and turn in that direction
-				sensorDistance := float64(options["sensorDistance"])
-				sensorDegree := float64(options["sensorDegree"])
-				leftSensorDirection := organism.direction + sensorDegree
-				if leftSensorDirection > 360 {
-					leftSensorDirection -= 360
-				}
-				rightSensorDirection := organism.direction - sensorDegree
-				if rightSensorDirection < 0 {
-					rightSensorDirection += 360
-				}
-				leftSensorVelocity := Velocity{
-					speed:     sensorDistance,
-					direction: leftSensorDirection,
-				}
-				rightSensorVelocity := Velocity{
-					speed:     sensorDistance,
-					direction: rightSensorDirection,
-				}
-				frontSensorVelocity := Velocity{
-					speed:     sensorDistance,
-					direction: organism.direction,
-				}
-				leftSensorX, leftSensorY := NextPos(organism.xPos, organism.yPos, leftSensorVelocity)
-				rightSensorX, rightSensorY := NextPos(organism.xPos, organism.yPos, rightSensorVelocity)
-				frontSensorX, frontSensorY := NextPos(organism.xPos, organism.yPos, frontSensorVelocity)
-				leftSensorDiscreteX, leftSensorDiscreteY := FloatPosToGridPos(leftSensorX, leftSensorY)
-				rightSensorDiscreteX, rightSensorDiscreteY := FloatPosToGridPos(rightSensorX, rightSensorY)
-				frontSensorDiscreteX, frontSensorDiscreteY := FloatPosToGridPos(frontSensorX, frontSensorY)
-
-				var leftSensorSpace *Space
-				var rightSensorSpace *Space
-				var frontSensorSpace *Space
-				if grid.hasCoord(leftSensorDiscreteX, leftSensorDiscreteY) {
-					leftSensorSpace = grid.rows[leftSensorDiscreteY][leftSensorDiscreteX]
-				}
-				if grid.hasCoord(rightSensorDiscreteX, rightSensorDiscreteY) {
-					rightSensorSpace = grid.rows[rightSensorDiscreteY][rightSensorDiscreteX]
-				}
-				if grid.hasCoord(frontSensorDiscreteX, frontSensorDiscreteY) {
-					frontSensorSpace = grid.rows[frontSensorDiscreteY][frontSensorDiscreteX]
-				}
-
-				if leftSensorSpace == nil || rightSensorSpace == nil || frontSensorSpace == nil {
-					organism.direction = float64(rand.Intn(360))
-				} else {
-					leftScent := leftSensorSpace.scent
-					rightScent := rightSensorSpace.scent
-					frontScent := frontSensorSpace.scent
-
-					if frontScent > leftScent && frontScent > rightScent {
-						// Continue in same direction
-					} else if leftScent > frontScent && rightScent > frontScent {
-						// Rotate randomly left or right
-						toss := rand.Intn(2)
-						if toss == 0 {
-							organism.direction += sensorDegree
-							if organism.direction > 360 {
-								organism.direction -= 360
-							}
-						} else {
-							organism.direction -= sensorDegree
-							if organism.direction < 0 {
-								organism.direction += 360
-							}
-						}
-					} else if leftScent > rightScent {
-						// Rotate left
-						organism.direction += sensorDegree
-						if organism.direction > 360 {
-							organism.direction -= 360
-						}
-					} else if rightScent > leftScent {
-						// Rotate right
-						organism.direction -= sensorDegree
-						if organism.direction < 0 {
-							organism.direction += 360
-						}
-					}
-					// Else continue in same direction
-				}
+				rotateOrganism(organism, grid)
 			}
 		}
 	}
+}
 
+func moveOrganism(organism *Organism, currentSpace *Space, destinationSpace *Space) {
+	if destinationSpace.organism == nil {
+		// NOTE: This is a greedy approach
+		// Setting this to nil before calculating the rest of the movements
+		// means the top-left of the screen becomes more dense than the
+		// bottom-right because it opens up movement options to the upper-left
+		// zones before the lower right zones
+		currentSpace.organism = nil
+		destinationSpace.organism = organism
+		destinationSpace.scent++
+	} else if destinationSpace.organism.id != organism.id {
+		organism.direction = float64(rand.Intn(360))
+	}
+}
+
+func rotateOrganism(organism *Organism, grid Grid) {
+	sensorDistance := float64(options["sensorDistance"])
+	sensorDegree := float64(options["sensorDegree"])
+	leftSensorDirection := organism.direction + sensorDegree
+	if leftSensorDirection > 360 {
+		leftSensorDirection -= 360
+	}
+	rightSensorDirection := organism.direction - sensorDegree
+	if rightSensorDirection < 0 {
+		rightSensorDirection += 360
+	}
+	leftSensorVelocity := Velocity{
+		speed:     sensorDistance,
+		direction: leftSensorDirection,
+	}
+	rightSensorVelocity := Velocity{
+		speed:     sensorDistance,
+		direction: rightSensorDirection,
+	}
+	frontSensorVelocity := Velocity{
+		speed:     sensorDistance,
+		direction: organism.direction,
+	}
+	leftSensorX, leftSensorY := NextPos(organism.xPos, organism.yPos, leftSensorVelocity)
+	rightSensorX, rightSensorY := NextPos(organism.xPos, organism.yPos, rightSensorVelocity)
+	frontSensorX, frontSensorY := NextPos(organism.xPos, organism.yPos, frontSensorVelocity)
+	leftSensorDiscreteX, leftSensorDiscreteY := FloatPosToGridPos(leftSensorX, leftSensorY)
+	rightSensorDiscreteX, rightSensorDiscreteY := FloatPosToGridPos(rightSensorX, rightSensorY)
+	frontSensorDiscreteX, frontSensorDiscreteY := FloatPosToGridPos(frontSensorX, frontSensorY)
+
+	var leftSensorSpace *Space
+	var rightSensorSpace *Space
+	var frontSensorSpace *Space
+	if grid.hasCoord(leftSensorDiscreteX, leftSensorDiscreteY) {
+		leftSensorSpace = grid.rows[leftSensorDiscreteY][leftSensorDiscreteX]
+	}
+	if grid.hasCoord(rightSensorDiscreteX, rightSensorDiscreteY) {
+		rightSensorSpace = grid.rows[rightSensorDiscreteY][rightSensorDiscreteX]
+	}
+	if grid.hasCoord(frontSensorDiscreteX, frontSensorDiscreteY) {
+		frontSensorSpace = grid.rows[frontSensorDiscreteY][frontSensorDiscreteX]
+	}
+
+	if leftSensorSpace == nil || rightSensorSpace == nil || frontSensorSpace == nil {
+		organism.direction = float64(rand.Intn(360))
+	} else {
+		leftScent := leftSensorSpace.scent
+		rightScent := rightSensorSpace.scent
+		frontScent := frontSensorSpace.scent
+
+		if frontScent > leftScent && frontScent > rightScent {
+			// Continue in same direction
+		} else if leftScent > frontScent && rightScent > frontScent {
+			// Rotate randomly left or right
+			toss := rand.Intn(2)
+			if toss == 0 {
+				organism.direction += sensorDegree
+				if organism.direction > 360 {
+					organism.direction -= 360
+				}
+			} else {
+				organism.direction -= sensorDegree
+				if organism.direction < 0 {
+					organism.direction += 360
+				}
+			}
+		} else if leftScent > rightScent {
+			// Rotate left
+			organism.direction += sensorDegree
+			if organism.direction > 360 {
+				organism.direction -= 360
+			}
+		} else if rightScent > leftScent {
+			// Rotate right
+			organism.direction -= sensorDegree
+			if organism.direction < 0 {
+				organism.direction += 360
+			}
+		}
+		// Else continue in same direction
+	}
+}
+
+func drawImage(grid Grid, anim *gif.GIF, pal color.Palette) {
 	img := createImage(grid, pal)
 	anim.Delay = append(anim.Delay, options["delay"])
 	anim.Image = append(anim.Image, img)
+}
+
+func drawNextFrame(grid Grid, anim *gif.GIF, pal color.Palette) {
+	setNextPositions(grid)
+	moveOrganisms(grid)
+	drawImage(grid, anim, pal)
 }
